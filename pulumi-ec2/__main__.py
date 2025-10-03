@@ -1,10 +1,120 @@
-"""An AWS Python Pulumi program"""
-
 import pulumi
-from pulumi_aws import s3
+import pulumi_aws as aws
 
-# Create an AWS resource (S3 Bucket)
-bucket = s3.Bucket('my-bucket')
+# --- Configuration ---
+# Use the t3.small instance type as requested for at least 1.5 GiB RAM
+INSTANCE_TYPE = "t3.small"
+# Name prefix for all resources
+NAME_PREFIX = "selenium-server"
 
-# Export the name of the bucket
-pulumi.export('bucket_name', bucket.id)
+# --- 1. Network Foundation (VPC and Subnets) ---
+# Create a new VPC for isolated deployment
+vpc = aws.ec2.Vpc(f"{NAME_PREFIX}-vpc",
+    cidr_block="10.0.0.0/16",
+    enable_dns_support=True,
+    enable_dns_hostnames=True,
+    tags={"Name": f"{NAME_PREFIX}-vpc"}
+)
+
+# Create a public subnet in the first available AZ
+subnet = aws.ec2.Subnet(f"{NAME_PREFIX}-subnet",
+    vpc_id=vpc.id,
+    cidr_block="10.0.1.0/24",
+    # Automatically assign a public IP to instances launched in this subnet
+    map_public_ip_on_launch=True,
+    tags={"Name": f"{NAME_PREFIX}-public-subnet"}
+)
+
+# Create an Internet Gateway and attach it to the VPC
+igw = aws.ec2.InternetGateway(f"{NAME_PREFIX}-igw",
+    vpc_id=vpc.id,
+    tags={"Name": f"{NAME_PREFIX}-igw"}
+)
+
+# Create a Route Table and route all traffic (0.0.0.0/0) to the Internet Gateway
+route_table = aws.ec2.RouteTable(f"{NAME_PREFIX}-rt",
+    vpc_id=vpc.id,
+    routes=[
+        aws.ec2.RouteTableRouteArgs(
+            cidr_block="0.0.0.0/0",
+            gateway_id=igw.id,
+        )
+    ],
+    tags={"Name": f"{NAME_PREFIX}-rt"}
+)
+
+# Associate the Route Table with the Subnet
+aws.ec2.RouteTableAssociation(f"{NAME_PREFIX}-rta",
+    subnet_id=subnet.id,
+    route_table_id=route_table.id
+)
+
+# --- 2. Security Group (Firewall) ---
+sec_group = aws.ec2.SecurityGroup(f"{NAME_PREFIX}-sg",
+    vpc_id=vpc.id,
+    description="Allow SSH (22) and HTTP (80) inbound access",
+    ingress=[
+        # Allow SSH from anywhere (0.0.0.0/0), but in production, restrict this to your IP range!
+        aws.ec2.SecurityGroupIngressArgs(
+            protocol="tcp",
+            from_port=22,
+            to_port=22,
+            cidr_blocks=["0.0.0.0/0"],
+        ),
+        # Allow HTTP for the web server
+        aws.ec2.SecurityGroupIngressArgs(
+            protocol="tcp",
+            from_port=6080,
+            to_port=6080,
+            cidr_blocks=["0.0.0.0/0"],
+        )
+    ],
+    # Allow all outbound traffic
+    egress=[
+        aws.ec2.SecurityGroupEgressArgs(
+            protocol="-1",
+            from_port=0,
+            to_port=0,
+            cidr_blocks=["0.0.0.0/0"],
+        )
+    ]
+)
+
+# --- 3. EC2 Configuration and Launch ---
+
+# Find the latest official Debian 12 AMI
+ami = aws.ec2.get_ami(
+    most_recent=True,
+    owners=["136693071363"],  # Official Debian owner ID for AWS Marketplace
+    filters=[
+        aws.ec2.GetAmiFilterArgs(
+            name="name",
+            values=["debian-12-amd64-*"],
+        ),
+        aws.ec2.GetAmiFilterArgs(
+            name="architecture",
+            values=["x86_64"],
+        ),
+        aws.ec2.GetAmiFilterArgs(
+            name="root-device-type",
+            values=["ebs"],
+        ),
+        aws.ec2.GetAmiFilterArgs(
+            name="virtualization-type",
+            values=["hvm"],
+        ),
+    ]
+)
+
+# Launch the EC2 Instance
+instance = aws.ec2.Instance(f"{NAME_PREFIX}-instance",
+    instance_type=INSTANCE_TYPE,
+    ami=ami.id,
+    subnet_id=subnet.id,
+    vpc_security_group_ids=[sec_group.id],
+    tags={"Name": f"{NAME_PREFIX}-instance"}
+)
+
+# --- 4. Outputs ---
+# Export the public IP and the URL to check the deployed web server
+pulumi.export("instance_public_ip", instance.public_ip)

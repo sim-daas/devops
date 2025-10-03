@@ -2,10 +2,10 @@ import pulumi
 import pulumi_aws as aws
 
 # --- Configuration ---
-# Use the t3.small instance type as requested
+# Use the t3.small instance type as requested for at least 1.5 GiB RAM
 INSTANCE_TYPE = "t3.small"
 # Name prefix for all resources
-NAME_PREFIX = "industrial-web-server"
+NAME_PREFIX = "selenium-server"
 
 # --- 1. Network Foundation (VPC and Subnets) ---
 # Create a new VPC for isolated deployment
@@ -64,8 +64,8 @@ sec_group = aws.ec2.SecurityGroup(f"{NAME_PREFIX}-sg",
         # Allow HTTP for the web server
         aws.ec2.SecurityGroupIngressArgs(
             protocol="tcp",
-            from_port=80,
-            to_port=80,
+            from_port=6080,
+            to_port=6080,
             cidr_blocks=["0.0.0.0/0"],
         )
     ],
@@ -82,23 +82,26 @@ sec_group = aws.ec2.SecurityGroup(f"{NAME_PREFIX}-sg",
 
 # --- 3. EC2 Configuration and Launch ---
 
-# Script to run when the instance starts (install NGINX)
-user_data_script = """#!/bin/bash
-sudo yum update -y
-sudo amazon-linux-extras install -y nginx
-sudo systemctl start nginx
-sudo systemctl enable nginx
-echo "<h1>Hello from Pulumi EC2!</h1>" | sudo tee /usr/share/nginx/html/index.html
-"""
-
-# Find the latest Amazon Linux 2023 AMI
+# Find the latest official Debian 12 AMI
 ami = aws.ec2.get_ami(
     most_recent=True,
-    owners=["amazon"],
+    owners=["136693071363"],  # Official Debian owner ID for AWS Marketplace
     filters=[
         aws.ec2.GetAmiFilterArgs(
             name="name",
-            values=["al2023-ami-2023.*x86_64"],
+            values=["debian-12-amd64-*"],
+        ),
+        aws.ec2.GetAmiFilterArgs(
+            name="architecture",
+            values=["x86_64"],
+        ),
+        aws.ec2.GetAmiFilterArgs(
+            name="root-device-type",
+            values=["ebs"],
+        ),
+        aws.ec2.GetAmiFilterArgs(
+            name="virtualization-type",
+            values=["hvm"],
         ),
     ]
 )
@@ -109,11 +112,9 @@ instance = aws.ec2.Instance(f"{NAME_PREFIX}-instance",
     ami=ami.id,
     subnet_id=subnet.id,
     vpc_security_group_ids=[sec_group.id],
-    user_data=user_data_script,
     tags={"Name": f"{NAME_PREFIX}-instance"}
 )
 
 # --- 4. Outputs ---
 # Export the public IP and the URL to check the deployed web server
 pulumi.export("instance_public_ip", instance.public_ip)
-pulumi.export("web_server_url", pulumi.Output.concat("http://", instance.public_ip))
