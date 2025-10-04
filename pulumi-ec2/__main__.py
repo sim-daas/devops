@@ -128,18 +128,18 @@ apt-get update && \
 
 pip3 install --no-cache-dir --break-system-packages --ignore-installed selenium requests beautifulsoup4 websockify
 
-# Set up VNC password for debian user
-sudo -u debian mkdir -p /home/debian/.vnc
-sudo -u debian bash -c 'echo "312" | x11vnc -storepasswd - /home/debian/.vnc/passwd'
-sudo chown -R debian:debian /home/debian/.vnc
+# Set up VNC password for admin user
+sudo -u admin mkdir -p /home/admin/.vnc
+sudo -u admin bash -c 'echo "312" | x11vnc -storepasswd - /home/admin/.vnc/passwd'
+sudo chown -R admin:admin /home/admin/.vnc
 
-# Download and install noVNC
-sudo -u debian mkdir -p /opt/novnc
-sudo -u debian wget -qO- https://github.com/novnc/noVNC/archive/refs/tags/v1.4.0.tar.gz | sudo -u debian tar xz --strip-components=1 -C /opt/novnc
-sudo -u debian ln -sf /opt/novnc/vnc.html /opt/novnc/index.html
+# Download and install noVNC as root
+mkdir -p /opt/novnc
+wget -qO- https://github.com/novnc/noVNC/archive/refs/tags/v1.4.0.tar.gz | tar xz --strip-components=1 -C /opt/novnc
+ln -sf /opt/novnc/vnc.html /opt/novnc/index.html
 
-# Clone the repo
-sudo -u debian git clone https://github.com/sim-daas/agents /home/debian/agents || true
+# Clone the repo as admin user
+sudo -u admin git clone https://github.com/sim-daas/agents /home/admin/agents || true
 '''
 
 # Launch the EC2 Instance
