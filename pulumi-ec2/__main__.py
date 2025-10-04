@@ -106,12 +106,50 @@ ami = aws.ec2.get_ami(
     ]
 )
 
+# User data script to set up the environment
+user_data_script = '''#!/bin/bash
+set -eux
+export DEBIAN_FRONTEND=noninteractive
+
+apt-get update && \
+    apt-get install -y --no-install-recommends \
+    python3 python3-pip python3-setuptools \
+    firefox-esr \
+    xfce4 xfce4-goodies xfce4-session \
+    x11vnc xvfb \
+    wget ca-certificates \
+    supervisor \
+    dbus-x11 \
+    fonts-dejavu \
+    novnc websockify \
+    git \
+    && apt-get remove -y python3-urllib3 \
+    && rm -rf /var/lib/apt/lists/*
+
+pip3 install --no-cache-dir --break-system-packages --ignore-installed selenium requests beautifulsoup4 websockify
+
+# Set up VNC password for ubuntu user
+sudo -u ubuntu mkdir -p /home/ubuntu/.vnc
+sudo -u ubuntu bash -c 'echo "312" | x11vnc -storepasswd - /home/ubuntu/.vnc/passwd'
+sudo chown -R ubuntu:ubuntu /home/ubuntu/.vnc
+
+# Download and install noVNC
+sudo -u ubuntu mkdir -p /opt/novnc
+sudo -u ubuntu wget -qO- https://github.com/novnc/noVNC/archive/refs/tags/v1.4.0.tar.gz | sudo -u ubuntu tar xz --strip-components=1 -C /opt/novnc
+sudo -u ubuntu ln -sf /opt/novnc/vnc.html /opt/novnc/index.html
+
+# Clone the repo
+sudo -u ubuntu git clone https://github.com/sim-daas/agents /home/ubuntu/agents || true
+'''
+
 # Launch the EC2 Instance
 instance = aws.ec2.Instance(f"{NAME_PREFIX}-instance",
     instance_type=INSTANCE_TYPE,
     ami=ami.id,
     subnet_id=subnet.id,
     vpc_security_group_ids=[sec_group.id],
+    key_name="ishaan_selenium",  # Use your existing AWS key pair name
+    user_data=user_data_script,
     tags={"Name": f"{NAME_PREFIX}-instance"}
 )
 

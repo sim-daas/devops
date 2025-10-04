@@ -112,6 +112,7 @@ instance = aws.ec2.Instance(f"{NAME_PREFIX}-instance",
     ami=ami.id,
     subnet_id=subnet.id,
     vpc_security_group_ids=[sec_group.id],
+    key_name="ishaan_selenium",  # Use your existing AWS key pair name
     tags={"Name": f"{NAME_PREFIX}-instance"}
 )
 
