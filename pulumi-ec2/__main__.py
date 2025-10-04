@@ -134,9 +134,9 @@ sudo -u admin bash -c 'echo "312" | x11vnc -storepasswd - /home/admin/.vnc/passw
 sudo chown -R admin:admin /home/admin/.vnc
 
 # Download and install noVNC as root
-mkdir -p /opt/novnc
-wget -qO- https://github.com/novnc/noVNC/archive/refs/tags/v1.4.0.tar.gz | tar xz --strip-components=1 -C /opt/novnc
-ln -sf /opt/novnc/vnc.html /opt/novnc/index.html
+sudo mkdir -p /opt/novnc
+sudo wget -qO- https://github.com/novnc/noVNC/archive/refs/tags/v1.4.0.tar.gz | tar xz --strip-components=1 -C /opt/novnc
+sudo ln -sf /opt/novnc/vnc.html /opt/novnc/index.html
 
 # Clone the repo as admin user
 sudo -u admin git clone https://github.com/sim-daas/agents /home/admin/agents || true
