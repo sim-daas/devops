@@ -133,7 +133,7 @@ apt-get clean
 rm -rf /var/lib/apt/lists/*
 
 echo "Installing Python packages..."
-pip3 install --no-cache-dir --break-system-packages --ignore-installed selenium requests beautifulsoup4 websockify
+pip3 install --no-cache-dir --break-system-packages --ignore-installed selenium requests beautifulsoup4 websockify fastapi uvicorn
 
 echo "Setting up VNC password for admin user..."
 su - admin -c "mkdir -p /home/admin/.vnc"
