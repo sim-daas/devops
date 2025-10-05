@@ -108,11 +108,15 @@ ami = aws.ec2.get_ami(
 
 # User data script to set up the environment
 user_data_script = '''#!/bin/bash
+# Redirect all output to log file for debugging
+exec > /var/log/user-data.log 2>&1
 set -eux
 export DEBIAN_FRONTEND=noninteractive
 
-apt-get update && \
-    apt-get install -y --no-install-recommends \
+echo "Starting user data script execution..."
+
+apt-get update
+apt-get install -y --no-install-recommends \
     python3 python3-pip python3-setuptools \
     firefox-esr \
     xfce4 xfce4-goodies xfce4-session \
@@ -122,24 +126,29 @@ apt-get update && \
     dbus-x11 \
     fonts-dejavu \
     novnc websockify \
-    git \
-    && apt-get remove -y python3-urllib3 \
-    && rm -rf /var/lib/apt/lists/*
+    git
 
+apt-get remove -y python3-urllib3 || true
+apt-get clean
+rm -rf /var/lib/apt/lists/*
+
+echo "Installing Python packages..."
 pip3 install --no-cache-dir --break-system-packages --ignore-installed selenium requests beautifulsoup4 websockify
 
-# Set up VNC password for admin user
-sudo -u admin mkdir -p /home/admin/.vnc
-sudo -u admin bash -c 'echo "312" | x11vnc -storepasswd - /home/admin/.vnc/passwd'
-sudo chown -R admin:admin /home/admin/.vnc
+echo "Setting up VNC password for admin user..."
+su - admin -c "mkdir -p /home/admin/.vnc"
+su - admin -c 'echo "312" | x11vnc -storepasswd - /home/admin/.vnc/passwd'
+chown -R admin:admin /home/admin/.vnc
 
-# Download and install noVNC as root
-sudo mkdir -p /opt/novnc
-sudo wget -qO- https://github.com/novnc/noVNC/archive/refs/tags/v1.4.0.tar.gz | tar xz --strip-components=1 -C /opt/novnc
-sudo ln -sf /opt/novnc/vnc.html /opt/novnc/index.html
+echo "Installing noVNC..."
+mkdir -p /opt/novnc
+wget -qO- https://github.com/novnc/noVNC/archive/refs/tags/v1.4.0.tar.gz | tar xz --strip-components=1 -C /opt/novnc
+ln -sf /opt/novnc/vnc.html /opt/novnc/index.html
 
-# Clone the repo as admin user
-sudo -u admin git clone https://github.com/sim-daas/agents /home/admin/agents || true
+echo "Cloning GitHub repository..."
+su - admin -c "git clone https://github.com/sim-daas/agents /home/admin/agents" || true
+
+echo "User data script completed successfully!"
 '''
 
 # Launch the EC2 Instance
