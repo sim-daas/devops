@@ -136,8 +136,8 @@ echo "Installing Python packages..."
 pip3 install --no-cache-dir --break-system-packages --ignore-installed selenium requests beautifulsoup4 websockify fastapi uvicorn
 
 echo "Setting up VNC password for admin user..."
-su - admin -c "mkdir -p /home/admin/.vnc"
-su - admin -c 'echo "312" | x11vnc -storepasswd - /home/admin/.vnc/passwd'
+mkdir -p /home/admin/.vnc
+echo "312" | x11vnc -storepasswd - /home/admin/.vnc/passwd
 chown -R admin:admin /home/admin/.vnc
 
 echo "Installing noVNC..."
@@ -146,7 +146,7 @@ wget -qO- https://github.com/novnc/noVNC/archive/refs/tags/v1.4.0.tar.gz | tar x
 ln -sf /opt/novnc/vnc.html /opt/novnc/index.html
 
 echo "Cloning GitHub repository..."
-su - admin -c "git clone https://github.com/sim-daas/agents /home/admin/agents" || true
+git clone https://github.com/sim-daas/agents /home/admin/agents || true
 
 echo "User data script completed successfully!"
 '''
