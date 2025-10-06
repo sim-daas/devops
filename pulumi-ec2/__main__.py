@@ -107,7 +107,9 @@ ami = aws.ec2.get_ami(
 )
 
 # User data script to set up the environment
-user_data_script = '''#!/bin/bash
+user_data_script = '''
+cat > setup.sh <<'EOF'
+#!/bin/bash
 apt-get update
 apt-get install -y --no-install-recommends \
     python3 python3-pip python3-setuptools \
@@ -136,6 +138,10 @@ wget -qO- https://github.com/novnc/noVNC/archive/refs/tags/v1.4.0.tar.gz | tar x
 ln -sf /opt/novnc/vnc.html /opt/novnc/index.html
 
 git clone https://github.com/sim-daas/agents /home/admin/agents || true
+EOF
+
+chmod +x setup.sh
+sudo ./setup.sh
 '''
 
 # Launch the EC2 Instance
