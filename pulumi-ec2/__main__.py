@@ -108,13 +108,6 @@ ami = aws.ec2.get_ami(
 
 # User data script to set up the environment
 user_data_script = '''#!/bin/bash
-# Redirect all output to log file for debugging
-exec > /var/log/user-data.log 2>&1
-set -eux
-export DEBIAN_FRONTEND=noninteractive
-
-echo "Starting user data script execution..."
-
 apt-get update
 apt-get install -y --no-install-recommends \
     python3 python3-pip python3-setuptools \
