@@ -3,7 +3,7 @@ import pulumi_aws as aws
 
 # --- Configuration ---
 # Use the t3.small instance type as requested for at least 1.5 GiB RAM
-INSTANCE_TYPE = "t3.small"
+INSTANCE_TYPE = "t3.medium"
 # Name prefix for all resources
 NAME_PREFIX = "selenium-server"
 
