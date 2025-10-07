@@ -67,6 +67,13 @@ sec_group = aws.ec2.SecurityGroup(f"{NAME_PREFIX}-sg",
             from_port=6080,
             to_port=6080,
             cidr_blocks=["0.0.0.0/0"],
+        ),
+        # Allow FastAPI/Uvicorn on port 8000
+        aws.ec2.SecurityGroupIngressArgs(
+            protocol="tcp",
+            from_port=8000,
+            to_port=8000,
+            cidr_blocks=["0.0.0.0/0"],
         )
     ],
     # Allow all outbound traffic
