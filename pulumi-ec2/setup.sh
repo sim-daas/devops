@@ -17,7 +17,7 @@ apt-get remove -y python3-urllib3 || true
 apt-get clean
 rm -rf /var/lib/apt/lists/*
 
-pip3 install --no-cache-dir --break-system-packages --ignore-installed selenium requests beautifulsoup4 websockify fastapi uvicorn
+pip3 install --no-cache-dir --break-system-packages --ignore-installed selenium websockify fastapi uvicorn
 
 mkdir -p /home/admin/.vnc
 echo "312" | x11vnc -storepasswd - /home/admin/.vnc/passwd
