@@ -119,6 +119,7 @@ set -eux
 apt-get update
 apt-get install -y git
 cd /home/admin/ && git clone https://github.com/sim-daas/agents
+chown -R admin:admin /home/admin/agents
 '''
 
 # Launch the EC2 Instance
